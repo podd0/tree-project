@@ -32,8 +32,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "YOCTO_APPS": "ON",
-        "YOCTO_EMBREE": "ON",
-        "YOCTO_DENOISE": "ON",
+        "YOCTO_EMBREE": "OFF",
+        "YOCTO_DENOISE": "OFF",
         "YOCTO_OPENGL": "ON",
         "YOCTO_CUDA": "OFF"
       },
