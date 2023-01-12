@@ -42,6 +42,7 @@
 #include <cstdint>
 #include <limits>
 #include <utility>
+#include <ostream>
 
 // -----------------------------------------------------------------------------
 // USING DIRECTIVES
@@ -203,6 +204,7 @@ inline vec2f& operator*=(vec2f& a, const vec2f& b);
 inline vec2f& operator*=(vec2f& a, float b);
 inline vec2f& operator/=(vec2f& a, const vec2f& b);
 inline vec2f& operator/=(vec2f& a, float b);
+
 
 // Vector products and lengths.
 inline float dot(const vec2f& a, const vec2f& b);
@@ -1170,6 +1172,12 @@ inline vec2f& operator*=(vec2f& a, float b) { return a = a * b; }
 inline vec2f& operator/=(vec2f& a, const vec2f& b) { return a = a / b; }
 inline vec2f& operator/=(vec2f& a, float b) { return a = a / b; }
 
+inline std::ostream& operator<<(std::ostream& os, vec2f vec) {
+  os << "(" << vec.x <<", "<<vec.y<<")";
+  return os;
+}
+
+
 // Vector products and lengths.
 inline float dot(const vec2f& a, const vec2f& b) {
   return a.x * b.x + a.y * b.y;
@@ -1300,6 +1308,12 @@ inline vec3f& operator*=(vec3f& a, const vec3f& b) { return a = a * b; }
 inline vec3f& operator*=(vec3f& a, float b) { return a = a * b; }
 inline vec3f& operator/=(vec3f& a, const vec3f& b) { return a = a / b; }
 inline vec3f& operator/=(vec3f& a, float b) { return a = a / b; }
+
+inline std::ostream& operator<<(std::ostream & os, vec3f vec)
+{
+  os << "(" << vec.x <<", "<<vec.y<<", "<<vec.z<<")";
+  return os;
+}
 
 // Vector products and lengths.
 inline float dot(const vec3f& a, const vec3f& b) {
@@ -1459,6 +1473,12 @@ inline vec4f& operator*=(vec4f& a, const vec4f& b) { return a = a * b; }
 inline vec4f& operator*=(vec4f& a, float b) { return a = a * b; }
 inline vec4f& operator/=(vec4f& a, const vec4f& b) { return a = a / b; }
 inline vec4f& operator/=(vec4f& a, float b) { return a = a / b; }
+
+inline std::ostream& operator<<(std::ostream& os, vec4f vec)
+{
+  os << "(" << vec.x <<", "<<vec.y<<", "<<vec.z<<", "<<vec.w<<")";
+  return os;
+}
 
 // Vector products and lengths.
 inline float dot(const vec4f& a, const vec4f& b) {
@@ -1650,6 +1670,13 @@ inline vec2i& operator*=(vec2i& a, int b) { return a = a * b; }
 inline vec2i& operator/=(vec2i& a, const vec2i& b) { return a = a / b; }
 inline vec2i& operator/=(vec2i& a, int b) { return a = a / b; }
 
+inline std::ostream& operator<<(std::ostream& os, vec2i vec)
+{
+    os << "(" << vec.x <<", "<<vec.y<<")";
+    return os;
+}
+
+
 // Max element and clamp.
 inline vec2i max(const vec2i& a, int b) { return {max(a.x, b), max(a.y, b)}; }
 inline vec2i min(const vec2i& a, int b) { return {min(a.x, b), min(a.y, b)}; }
@@ -1737,6 +1764,12 @@ inline vec3i& operator*=(vec3i& a, const vec3i& b) { return a = a * b; }
 inline vec3i& operator*=(vec3i& a, int b) { return a = a * b; }
 inline vec3i& operator/=(vec3i& a, const vec3i& b) { return a = a / b; }
 inline vec3i& operator/=(vec3i& a, int b) { return a = a / b; }
+
+inline std::ostream& operator<<(std::ostream& os, vec3i vec)
+{
+  os << "(" << vec.x <<", "<<vec.y<<", "<<vec.z<<")";
+  return os;
+}
 
 // Max element and clamp.
 inline vec3i max(const vec3i& a, int b) {
@@ -1830,6 +1863,11 @@ inline vec4i& operator*=(vec4i& a, int b) { return a = a * b; }
 inline vec4i& operator/=(vec4i& a, const vec4i& b) { return a = a / b; }
 inline vec4i& operator/=(vec4i& a, int b) { return a = a / b; }
 
+inline std::ostream& operator<<(std::ostream& os, vec4i vec)
+{
+  os << "(" << vec.x <<", "<<vec.y<<", "<<vec.z<<", "<<vec.w<<")";
+  return os;
+}
 // Max element and clamp.
 inline vec4i max(const vec4i& a, int b) {
   return {max(a.x, b), max(a.y, b), max(a.z, b), max(a.w, b)};
