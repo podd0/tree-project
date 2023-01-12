@@ -15,6 +15,7 @@ add_yapp(yconvert)
 add_yapp(yconverts)
 add_yapp(ysamples)
 add_yapp(pointgen)
+add_yapp(tree)
 
 if(YOCTO_CUDA)
   add_yapp(ycutrace)
