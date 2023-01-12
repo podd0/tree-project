@@ -33,8 +33,6 @@ shape_data pointgen_cylinder(int samples, rng_state rng)
 		sh.positions.push_back({x, rand1f(rng) * 2, z});
 		sh.points.push_back(i);
 	}
-	auto [mx, my, mz] = sh.positions[0];
-	float Mx = mx, My = my, Mz = mz;
 	return sh;
 }
 
@@ -48,13 +46,6 @@ shape_data pointgen_cone(int samples, rng_state rng)
 		sh.positions.push_back({x, -2 * y + 2, z});
 		sh.points.push_back(i);
 	}
-	sh.positions.push_back({0, 0, 0});
-	sh.positions.push_back({1, 0, 0});
-	sh.positions.push_back({0, 0, 1});
-	int n = sh.positions.size();
-	sh.triangles.push_back({n - 1, n - 2, n - 3});
-	auto [mx, my, mz] = sh.positions[0];
-	float Mx = mx, My = my, Mz = mz;
 	return sh;
 }
 
