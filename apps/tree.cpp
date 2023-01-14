@@ -1,6 +1,7 @@
 #include <iostream>
 #include <set>
 #include <tuple>
+#include <cassert>
 #include <yocto/yocto_sampling.h>
 #include <yocto/yocto_cli.h>
 #include <yocto/yocto_shape.h>
@@ -18,16 +19,20 @@ bool cmp3f(vec3f a, vec3f b)
 {
     return tie(a.x, a.y, a.z) < tie(b.x, b.y, b.z);
 }
-
+// represents a branch segment of the tree's skeleton
 struct branch
 {
-    vec3f start, end;
-    int parent_ind;
-    vector<int> children;
-    vector<vec3f> attractors;
+    vec3f start, end;         // extremities of the segment
+    int parent_ind;           // index of the parent branch in branches
+    vector<int> children;     // indexes of the children in branches
+    vector<vec3f> attractors; // points that decide the growth of the segment in this step
 
     vec3f direction() { return normalize(end - start); }
 };
+/*
+ removes the points which are in kill_range from a branch
+ (points that are too close to a branch.end)
+*/
 void kill_points(vector<vec3f> &points, vector<branch> &branches, float kill_range)
 {
     vector<vec3f> old = points;
@@ -47,59 +52,163 @@ void kill_points(vector<vec3f> &points, vector<branch> &branches, float kill_ran
     }
 }
 
+rng_state rng;
+float random_factor = 0.0f;
+
+vec3f random_growth_vector()
+{
+    return sample_sphere(rand2f(rng)) * random_factor;
+}
+
+/* Grows the leaves forward (in their current direction),
+   by adding a branch segment on each leaf
+ */
 void grow_forward(vector<branch> &branches, vector<int> &leaves, float branch_length)
 {
-    for (int lf_ind : range(leaves.size()))
+    for (int &leaf : leaves)
     {
-        int br_ind = leaves[lf_ind];
-        branch nw;
-        nw.start = branches[br_ind].end;
-        nw.end = nw.start + branches[br_ind].direction() * branch_length;
-        nw.parent_ind = br_ind;
+        branch new_leaf;
+        new_leaf.start = branches[leaf].end;
+        vec3f direction = normalize(branches[leaf].direction() + random_growth_vector());
+        new_leaf.end = new_leaf.start + direction * branch_length;
+        new_leaf.parent_ind = leaf;
         int child_ind = branches.size();
-        leaves[lf_ind] = child_ind;
-        branches.push_back(nw);
-        branches[br_ind].children.push_back(child_ind);
+        branches.push_back(new_leaf);
+        branches[leaf].children.push_back(child_ind);
+        leaf = child_ind; // since leaf has a child, we can swap it with the new leaf in leaves
     }
 }
 
+/* chooses the points that are attractors for each branch.
+   Returns true if it finds at least one match
+*/
+bool choose_attractors(vector<vec3f> &points, vector<branch> &branches, float attraction_range)
+{
+    for (branch &b : branches)
+        b.attractors.clear();
+    bool match_found = false;
+    for (vec3f p : points)
+    {
+        float min = 1.0 / 0.0;
+        branch *closest = NULL;
+        for (branch &b : branches)
+        {
+            float dist = distance(p, b.end);
+            if (dist < attraction_range && min > dist)
+            {
+                closest = &b;
+                min = dist;
+            }
+        }
+        if (closest != NULL)
+        {
+            closest->attractors.push_back(p);
+            match_found = true;
+        }
+    }
+    return match_found;
+}
+
+shape_data shape_from_branches(vector<branch> &branches)
+{
+    shape_data sh;
+    int ind = 0;
+    for (auto &br : branches)
+    {
+        sh.positions.push_back(br.end);
+        for (int child : br.children)
+            sh.lines.push_back({ind, child});
+        ind++;
+    }
+    sh.positions.push_back(branches[0].start);
+    sh.lines.push_back({0, (int)sh.positions.size() - 1});
+    return sh;
+}
+
+void grow_towards_attractors(vector<branch> &branches, float branch_length)
+{
+    for (int i : range(branches.size()))
+    {
+        branch &b = branches[i];
+        if (b.attractors.empty())
+            continue;
+        vec3f dir = {0, 0, 0};
+        for (vec3f attr : b.attractors)
+        {
+            dir += normalize(attr - b.end);
+        }
+        dir /= b.attractors.size();
+        dir += random_growth_vector();
+        dir = normalize(dir);
+
+        branch new_leaf;
+        new_leaf.start = b.end;
+        new_leaf.end = new_leaf.start + dir * branch_length;
+        new_leaf.parent_ind = i;
+        int child_ind = branches.size();
+        branches.push_back(new_leaf);
+        branches[i].children.push_back(child_ind);
+    }
+}
+
+vector<int> recalc_leaves(vector<branch> &branches)
+{
+    vector<int> leaves;
+    for (int i : range(branches.size()))
+    {
+        if (branches[i].children.empty())
+            leaves.push_back(i);
+    }
+    return leaves;
+}
+
+// generates the tree model given the parameters and the sampled points
 shape_data generate_tree(string input, float branch_length, float kill_range, float attraction_range)
 {
     shape_data sampling = load_shape(input);
-    vector<vec3f> points = {{0, 0, 0.1}, {10, 10, 10}, {0, 0, -1}, {0, 0.2, -1.1}, {0, 0.2, -0.9}, {0, 0.2, 0.9}, {0, 0.2, 0.1}};
+    vector<vec3f> points = sampling.positions; // vector of the attractors
+    //{{0, 0, 0.6}, {10, 10, 10}, {0, 0, -1}, {0, 0.2, -1.1}, {0, 0.2, -0.9}, {0, 0.2, 0.9}, {0, 0.2, 0.1}};
     vector<int> leaves = {0}; // vector of indexes of the leave branches
     vector<branch> branches = {branch{{0, 0, 0}, {0, branch_length, 0}, -1}};
 
-    int iterations = 30;
-    while (!points.empty() && iterations > 0)
+    int iterations = 1000;
+    while (!points.empty())
     {
         --iterations;
         kill_points(points, branches, kill_range);
         // reset all attractors before recalculating them
-        for (branch &b : branches)
-            b.attractors.clear();
 
-        for (vec3f p : points)
+        if (choose_attractors(points, branches, attraction_range))
         {
-            float min = 1.0 / 0.0;
-            branch *closest = NULL;
-            for (branch &b : branches)
-            {
-                float dist = distance(p, b.end);
-                if (dist < attraction_range && min > dist)
-                {
-                    closest = &b;
-                    min = dist;
-                }
-            }
-            closest->attractors.push_back(p);
+            grow_towards_attractors(branches, branch_length);
+            leaves = recalc_leaves(branches);
         }
-        for (vec3f p : branches[0].attractors)
-            cout << p << ' ';
-        cout << endl;
+        else
+            grow_forward(branches, leaves, branch_length);
     }
+    // for (int i : range(branches.size()))
+    // {
+    //     cout << endl
+    //          << "branch " << i << " at pos " << branches[i].end << ": ";
+    //     for (vec3f p : branches[i].attractors)
+    //         cout << p << ' ';
+    // }
+    // cout << endl;
+    // for (int i : range(branches.size()))
+    // {
+    //     cout << i << ":";
+    //     for (int ch : branches[i].children)
+    //         cout << ch << ' ';
+    //     cout << endl;
+    // }
+    shape_data sh = shape_from_branches(branches);
 
-    return {};
+    // for (vec3f p : sampling.positions)
+    // {
+    //     sh.points.push_back(sh.positions.size());
+    //     sh.positions.push_back(p);
+    // }
+    return sh;
 }
 
 void run(const vector<string> &args)
@@ -116,12 +225,15 @@ void run(const vector<string> &args)
     add_option(cli, "br_length", branch_length, "the length of a single branch segment");
     add_option(cli, "kill", kill_range, "the branch-point distance at which attraction points are deleted");
     add_option(cli, "attraction", attraction_range, "the distance at which attraction points attract the branch grows");
+    add_option(cli, "random_factor", random_factor, "decides the influence of randomness in the directions of the branches");
+    add_option(cli, "seed", seed, "rng seed (defaults time)");
 
     parse_cli(cli, args);
 
-    rng_state rng = make_rng(seed);
-    shape_data sh;
-    generate_tree(input, branch_length, kill_range, attraction_range);
+    assert(attraction_range > kill_range && kill_range > branch_length);
+
+    rng = make_rng(seed);
+    shape_data sh = generate_tree(input, branch_length, kill_range, attraction_range);
     save_shape(output, sh);
 }
 
