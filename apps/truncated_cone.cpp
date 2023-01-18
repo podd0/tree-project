@@ -16,9 +16,9 @@ shape_data make_cone(float rad1, float rad2, float height)
 	float stepangle = 2 * pi / steps;
 	for (int i = 0; i < steps; i++)
 	{
-		auto x = cosf(i * stepangle), z = sinf(i * stepangle);
-		sh.positions.push_back(vec3f{x, 0, z} * rad1);
-		sh.positions.push_back(vec3f{x, 0, z} * rad2 + vec3f{0, height, 0});
+		auto x = cosf(i * stepangle), y = sinf(i * stepangle);
+		sh.positions.push_back(vec3f{x, y, 0} * rad1 + vec3f{0, 0, height / 2});
+		sh.positions.push_back(vec3f{x, y, 0} * rad2 + vec3f{0, 0, -height / 2});
 	}
 	for (int ci = 0; ci < steps; ci++)
 	{
@@ -31,7 +31,20 @@ shape_data make_cone(float rad1, float rad2, float height)
 			i++;
 		}
 	}
-	sh.normals = compute_normals(sh);
+	sh.positions.push_back({0, 0, +height / 2});
+	sh.positions.push_back({0, 0, -height / 2});
+	int botc = sh.positions.size() - 1;
+	int topc = sh.positions.size() - 2;
+
+	int o = sh.positions.size() - 2;
+	for (int i : range(steps))
+		sh.triangles.push_back({o, i * 2, ((i + 1) % steps) * 2});
+
+	o = sh.positions.size() - 1;
+	for (int i : range(steps))
+		sh.triangles.push_back({o, i * 2 + 1, ((i + 1) % steps) * 2 + 1});
+
+	// sh.normals = compute_normals(sh);
 	return sh;
 }
 
@@ -45,7 +58,7 @@ void run(const vector<string> &args)
 	add_option(cli, "output", output, "output file");
 	// parse_cli(cli, args);
 
-	save_shape(output, make_uvcylinder());
+	save_shape(output, make_cone(1, 0.5, 1));
 }
 int main(int argc, const char *argv[])
 {
