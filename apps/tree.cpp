@@ -121,7 +121,7 @@ shape_data shape_from_branches(vector<branch> &branches)
         ind++;
     }
     sh.positions.push_back(branches[0].start);
-    sh.lines.push_back({0, (int)sh.positions.size() - 1});
+    sh.lines.push_back({(int)sh.positions.size() - 1, 0});
     return sh;
 }
 
@@ -171,8 +171,8 @@ shape_data generate_tree(string input, float branch_length, float kill_range, fl
     vector<int> leaves = {0}; // vector of indexes of the leave branches
     vector<branch> branches = {branch{{0, 0, 0}, {0, branch_length, 0}, -1}};
 
-    int iterations = 1000;
-    while (!points.empty())
+    int iterations = 1000000;
+    while (!points.empty() && iterations)
     {
         --iterations;
         kill_points(points, branches, kill_range);
@@ -201,6 +201,7 @@ shape_data generate_tree(string input, float branch_length, float kill_range, fl
     //         cout << ch << ' ';
     //     cout << endl;
     // }
+    cout << "exited at " << 1000000 - iterations << " iterations\n";
     shape_data sh = shape_from_branches(branches);
 
     // for (vec3f p : sampling.positions)
@@ -211,6 +212,88 @@ shape_data generate_tree(string input, float branch_length, float kill_range, fl
     return sh;
 }
 
+shape_data make_tcone(float rad1, float rad2, float height)
+{
+    shape_data sh;
+    int steps = 16;
+    float stepangle = 2 * pi / steps;
+    for (int i = 0; i < steps; i++)
+    {
+        auto x = cosf(i * stepangle), z = sinf(i * stepangle);
+        sh.positions.push_back(vec3f{x, 0, z} * rad1 - vec3f{0, height, 0});
+        sh.positions.push_back(vec3f{x, 0, z} * rad2 + vec3f{0, height, 0});
+    }
+    for (int ci = 0; ci < steps; ci++)
+    {
+        int i = ci * 2;
+        int mod = sh.positions.size();
+        for (int h : range(1))
+        {
+            sh.triangles.push_back({i, i + 1, (i + 2) % mod});
+            sh.triangles.push_back({(i + 2) % mod, i + 1, (i + 3) % mod});
+            i++;
+        }
+    }
+    for (auto &p : sh.positions)
+    {
+        swap(p.z, p.y);
+        p.z = -p.z;
+    }
+    // sh.normals = compute_normals(sh);
+    return sh;
+}
+void merge_shape_inplace(shape_data &shape, const shape_data &merge)
+{
+    auto offset = (int)shape.positions.size();
+    for (auto &p : merge.points)
+        shape.points.push_back(p + offset);
+    for (auto &l : merge.lines)
+        shape.lines.push_back({l.x + offset, l.y + offset});
+    for (auto &t : merge.triangles)
+        shape.triangles.push_back({t.x + offset, t.y + offset, t.z + offset});
+    for (auto &q : merge.quads)
+        shape.quads.push_back(
+            {q.x + offset, q.y + offset, q.z + offset, q.w + offset});
+
+    shape.positions.insert(
+        shape.positions.end(), merge.positions.begin(), merge.positions.end());
+}
+
+shape_data miomerge(shape_data a, shape_data b)
+{
+    int n = a.positions.size();
+    shape_data res = {a.points, a.lines, a.triangles, a.quads, a.positions};
+    for (vec3f p : b.positions)
+        res.positions.push_back(p);
+    for (auto p : b.points)
+        res.points.push_back(p + n);
+    for (auto [a, b] : b.lines)
+        res.lines.push_back({a + n, b + n});
+    for (auto [a, b, c] : b.triangles)
+        res.triangles.push_back({a + n, b + n, c + n});
+    for (auto [a, b, c, d] : b.quads)
+        res.quads.push_back({a + n, b + n, c + n, d + n});
+    return res;
+}
+shape_data lines_to_trunc_cones(const vector<vec2i> &lines,
+                                const vector<vec3f> &positions, float branch_length)
+{
+    auto shape = shape_data{};
+    for (auto &line : lines)
+    {
+        auto cylinder = make_tcone(branch_length / 7, branch_length / 9, 1);
+        auto frame = frame_fromz((positions[line.x] + positions[line.y]) / 2,
+                                 positions[line.x] - positions[line.y]);
+        auto length = distance(positions[line.x], positions[line.y]);
+        for (auto &position : cylinder.positions)
+            position = transform_point(frame, position * vec3f{1, 1, length / 2});
+        for (auto &normal : cylinder.normals)
+            normal = transform_direction(frame, normal);
+        merge_shape_inplace(shape, cylinder);
+    }
+    return shape;
+}
+
 void run(const vector<string> &args)
 {
     uint64_t seed = time(0);
@@ -219,6 +302,7 @@ void run(const vector<string> &args)
     float branch_length = 0.2f;
     float kill_range = 0.5f;
     float attraction_range = 1.0f;
+
     auto cli = make_cli("tree", "generate treee given a model of attraction points");
     add_option(cli, "input", input, "a model containing the attraction point");
     add_option(cli, "output", output, "the filename of the resulting tree model");
@@ -234,9 +318,19 @@ void run(const vector<string> &args)
 
     rng = make_rng(seed);
     shape_data sh = generate_tree(input, branch_length, kill_range, attraction_range);
-    save_shape(output, sh);
-}
 
+    shape_data acc;
+    for (vec3f p : sh.positions)
+    {
+        shape_data sph = make_sphere(5, branch_length / 7);
+        for (vec3f &p2 : sph.positions)
+            p2 += p;
+        merge_shape_inplace(acc, sph);
+    }
+
+    auto finale = miomerge(acc, lines_to_trunc_cones(sh.lines, sh.positions, branch_length));
+    save_shape(output, finale);
+}
 int main(int argc, const char *argv[])
 {
     try
