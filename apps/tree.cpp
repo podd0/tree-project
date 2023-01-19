@@ -220,8 +220,8 @@ shape_data make_tcone(float rad1, float rad2, float height)
     for (int i = 0; i < steps; i++)
     {
         auto x = cosf(i * stepangle), y = sinf(i * stepangle);
-        sh.positions.push_back(vec3f{x, y, 0} * rad1 - vec3f{0, 0, height});
-        sh.positions.push_back(vec3f{x, y, 0} * rad2 + vec3f{0, 0, height});
+        sh.positions.push_back(vec3f{x, y, 0} * rad1 + vec3f{0, 0, height});
+        sh.positions.push_back(vec3f{x, y, 0} * rad2 - vec3f{0, 0, height});
     }
     for (int ci = 0; ci < steps; ci++)
     {
@@ -234,12 +234,7 @@ shape_data make_tcone(float rad1, float rad2, float height)
             i++;
         }
     }
-    for (auto &p : sh.positions)
-    {
-        swap(p.z, p.y);
-        p.z = -p.z;
-    }
-    // sh.normals = compute_normals(sh);
+
     return sh;
 }
 void merge_shape_inplace(shape_data &shape, const shape_data &merge)
@@ -322,7 +317,7 @@ void run(const vector<string> &args)
     shape_data acc{};
     for (vec3f p : sh.positions)
     {
-        shape_data sph = make_sphere(5, branch_length / 7);
+        shape_data sph = quads_to_triangles(make_sphere(5, branch_length / 7));
         sph = {sph.points, sph.lines, sph.triangles, sph.quads, sph.positions};
         for (vec3f &p2 : sph.positions)
             p2 += p;
