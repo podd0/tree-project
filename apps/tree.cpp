@@ -201,7 +201,8 @@ shape_data generate_tree(string input, float branch_length, float kill_range, fl
     //         cout << ch << ' ';
     //     cout << endl;
     // }
-    cout << "exited at " << 1000000 - iterations << " iterations\n";
+    cout << "exited at " << 1000000 - iterations << " iterations, " << branches.size() << " branches \n";
+
     shape_data sh = shape_from_branches(branches);
 
     // for (vec3f p : sampling.positions)
@@ -215,7 +216,7 @@ shape_data generate_tree(string input, float branch_length, float kill_range, fl
 shape_data make_tcone(float rad1, float rad2, float height)
 {
     shape_data sh;
-    int steps = 16;
+    int steps = 8;
     float stepangle = 2 * pi / steps;
     for (int i = 0; i < steps; i++)
     {
@@ -315,18 +316,18 @@ void run(const vector<string> &args)
     shape_data sh = generate_tree(input, branch_length, kill_range, attraction_range);
 
     shape_data acc{};
+    shape_data csph = quads_to_triangles(make_sphere(3, branch_length / 7));
     for (vec3f p : sh.positions)
     {
-        shape_data sph = quads_to_triangles(make_sphere(5, branch_length / 7));
-        sph = {sph.points, sph.lines, sph.triangles, sph.quads, sph.positions};
+        shape_data sph = {csph.points, csph.lines, csph.triangles, csph.quads, csph.positions};
         for (vec3f &p2 : sph.positions)
             p2 += p;
-        acc = miomerge(acc, sph);
+        merge_shape_inplace(acc, sph);
     }
 
-    auto finale = miomerge(acc, lines_to_trunc_cones(sh.lines, sh.positions, branch_length));
-    compute_normals(finale);
-    save_shape(output, finale);
+    merge_shape_inplace(acc, lines_to_trunc_cones(sh.lines, sh.positions, branch_length));
+    compute_normals(acc);
+    save_shape(output, acc);
 }
 int main(int argc, const char *argv[])
 {
