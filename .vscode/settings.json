@@ -121,11 +121,13 @@
   },
   "json.schemas": [
     {
-      "fileMatch": ["/*.json"],
+      "fileMatch": [
+        "/*.json"
+      ],
       "url": "./scripts/scene.schema.json"
     }
   ],
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": false,
   "python.formatting.provider": "yapf",
   "cSpell.words": [
     "bsdf",

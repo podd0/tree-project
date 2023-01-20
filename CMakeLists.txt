@@ -9,6 +9,9 @@ option(YOCTO_EMBREE "Enable ray casting with Intel's Embree" OFF)
 option(YOCTO_CUDA "Enable ray casting with Optix and Cuda" OFF)
 option(YOCTO_TESTING "Enable testing" OFF)
 
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

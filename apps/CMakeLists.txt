@@ -17,7 +17,6 @@ add_yapp(ysamples)
 add_yapp(pointgen)
 add_yapp(tree)
 add_yapp(merge)
-add_yapp(truncated_cone)
 
 if(YOCTO_CUDA)
   add_yapp(ycutrace)
