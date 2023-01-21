@@ -8,6 +8,7 @@
 #include <yocto/yocto_sceneio.h>
 #include <yocto/yocto_math.h>
 #include <yocto/yocto_geometry.h>
+#include <yocto/branch.h>
 namespace yocto
 {
     using std::cout;
@@ -20,15 +21,8 @@ namespace yocto
         return tie(a.x, a.y, a.z) < tie(b.x, b.y, b.z);
     }
     // represents a branch segment of the tree's skeleton
-    struct branch
-    {
-        vec3f start, end;         // extremities of the segment
-        int parent_ind;           // index of the parent branch in branches
-        vector<int> children;     // indexes of the children in branches
-        vector<vec3f> attractors; // points that decide the growth of the segment in this step
-
-        vec3f direction() { return normalize(end - start); }
-    };
+    vec3f branch::direction() { return normalize(end - start); }
+    
 
     /*
      removes the points which are in kill_range from a branch

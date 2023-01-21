@@ -9,6 +9,6 @@ namespace yocto
 	using std::cout;
 	using std::endl;
 
-	shape_data make_truncated_cone(float rad1, float rad2, float height);
+	shape_data make_truncated_cone(float rad1, float rad2, float height, int steps = 16);
 
 }

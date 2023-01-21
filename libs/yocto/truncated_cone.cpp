@@ -9,10 +9,9 @@ namespace yocto
 	using std::cout;
 	using std::endl;
 
-	shape_data make_truncated_cone(float rad1, float rad2, float height)
+	shape_data make_truncated_cone(float rad1, float rad2, float height, int steps = 16)
 	{
 		shape_data sh;
-		int steps = 16;
 		float stepangle = 2 * pi / steps;
 		for (int i = 0; i < steps; i++)
 		{
