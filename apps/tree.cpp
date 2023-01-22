@@ -16,7 +16,7 @@ using std::cout;
 using std::endl;
 using std::tie;
 
-float dfs(vector<branch> &branches, branch &curr, float leaf_radius, float inverted_growth)
+float calc_branch_radius(vector<branch> &branches, branch &curr, float leaf_radius, float inverted_growth)
 {
     if (curr.children.empty())
     {
@@ -26,7 +26,7 @@ float dfs(vector<branch> &branches, branch &curr, float leaf_radius, float inver
     float sum = 0;
     for (int child : curr.children)
     {
-        sum += pow(dfs(branches, branches[child], leaf_radius, inverted_growth), inverted_growth);
+        sum += pow(calc_branch_radius(branches, branches[child], leaf_radius, inverted_growth), inverted_growth);
     }
     curr.high_base_radius = pow(sum, 1 / inverted_growth);
     return curr.high_base_radius;
@@ -41,7 +41,7 @@ vector<branch> generate_tree(string input, float branch_length, float kill_range
     vector<int> leaves = {0}; // vector of indexes of the leave branches
     vector<branch> branches = {branch{{0, 0, 0}, {0, branch_length, 0}, -1}};
 
-    int iterations = 1000000;
+    int iterations = 60;
     while (!points.empty() && iterations)
     {
         --iterations;
@@ -53,11 +53,12 @@ vector<branch> generate_tree(string input, float branch_length, float kill_range
             grow_towards_attractors(branches, branch_length, rng, random_factor);
             leaves = recalc_leaves(branches);
         }
-        else {
-            cout<<"forward \n";
+        else
+        {
+            cout << "forward \n";
             grow_forward(branches, leaves, branch_length, rng, random_factor);
         }
-        cout<< "iteration #"<<1000000 - iterations<< "remaining points : "<<points.size()<<" branches : "<<branches.size()<<endl;
+        cout << "iteration #" << 1000000 - iterations << "remaining points : " << points.size() << " branches : " << branches.size() << endl;
     }
     cout << "exited at " << 1000000 - iterations << " iterations" << endl;
     // shape_data sh = shape_from_branches(branches);
@@ -118,8 +119,10 @@ shape_data lines_to_trunc_cones(const vector<branch> &branches, int steps)
 void run(const vector<string> &args)
 {
     uint64_t seed = time(0);
-    string input = "points.ply";
+    string input = "/home/andrea/tree-project/bin/points.ply";
     string output = "tree.ply";
+    string leaf_model = "/home/andrea/tree-project/bin/leaf.ply";
+    string leaves_output = "/home/andrea/tree-project/bin/leaves.ply";
     float branch_length = 0.2f;
     float kill_range = 0.5f;
     float attraction_range = 1.0f;
@@ -128,6 +131,7 @@ void run(const vector<string> &args)
     float inverted_growth = 2.0f;
     int sphere_steps = 4;
     int cone_steps = 16;
+    bool make_leaves = false;
 
     auto cli = make_cli("tree", "generate treee given a model of attraction points");
     add_option(cli, "input", input, "a model containing the attraction point");
@@ -141,15 +145,19 @@ void run(const vector<string> &args)
     add_option(cli, "inverted_growth", inverted_growth, "determines how the branch get thinner");
     add_option(cli, "sphere_steps", sphere_steps, "sphere subdivisions");
     add_option(cli, "cone_steps", cone_steps, "cone subdivisions");
+    add_option(cli, "leaf", leaf_model, "leaf model to put on the branches");
+    add_option(cli, "leaves_output", leaves_output, "resulting model of leaves");
+    add_option(cli, "enable_leaves", make_leaves, "enable to generate the leaves");
     parse_cli(cli, args);
 
     assert(attraction_range > kill_range && kill_range > branch_length);
 
     rng_state rng = make_rng(seed);
     vector<branch> branches = generate_tree(input, branch_length, kill_range, attraction_range, rng, random_factor, leaf_radius, inverted_growth);
-    dfs(branches, branches[0], leaf_radius, inverted_growth);
+    calc_branch_radius(branches, branches[0], leaf_radius, inverted_growth);
     shape_data acc{};
     shape_data csph = quads_to_triangles(make_sphere(sphere_steps, 1));
+
     for (branch &b : branches)
     {
         shape_data sph = {csph.points, csph.lines, csph.triangles, csph.quads, csph.positions};
@@ -160,10 +168,38 @@ void run(const vector<string> &args)
         }
         merge_shape_inplace(acc, sph);
     }
-
+    shape_data leaf = load_shape(leaf_model);
+    for(auto & p:leaf.positions)
+    {
+        p.y *= 0.05;
+        p.x *= 0.05;
+    }
+    // auto leaf = quads_to_triangles(make_uvcylinder({10, 1, 1}, {0.05, 1}, {1, 1, 1}));
+   
+    shape_data leaves{};
+    for (branch &b : branches)
+    {
+        if (b.children.empty())
+        {
+            shape_data leaf_copy = leaf;
+            vec3f direction = b.direction()*0.05*2;
+            // auto frame = frame_fromz((b.start + b.end) / 2, b.start - b.end);
+            auto frame = frame_fromz(b.end + direction / 2, - direction);
+            for (auto &position : leaf_copy.positions)
+                position = transform_point(frame, position*vec3f{1, 1, 0.05});
+            merge_shape_inplace(leaves, leaf_copy);
+            // break;
+        }
+    }
+    save_shape(leaves_output, leaves);
     merge_shape_inplace(acc, lines_to_trunc_cones(branches, cone_steps));
     acc.normals = compute_normals(acc);
     save_shape(output, acc);
+    
+    // merge_shape_inplace(acc, quads_to_triangles(leaves));
+    // acc.points = {}; acc.lines = {}; acc.quads = {}; 
+    // acc.normals = compute_normals(acc);
+    // save_shape("merging.ply", acc);
 }
 int main(int argc, const char *argv[])
 {
