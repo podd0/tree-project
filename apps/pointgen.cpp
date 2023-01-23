@@ -41,7 +41,7 @@ shape_data generic_shape(int samples, rng_state rng, string file) {
 	//creo il quadrato di base della bbox
 	shape_bvh sh_bvh = make_shape_bvh(sh, false);
 	
-	vector<vec3f> positions_copy = sh.positions;
+	vector<vec3f> positions_copy;
 	for (int i : range(samples)) {
 		positions_copy.push_back({rand1f(rng)*length + bbox.min.x, rand1f(rng) *height + bbox.min.y, rand1f(rng)*width + bbox.min.z});
 	}
@@ -58,7 +58,6 @@ shape_data generic_shape(int samples, rng_state rng, string file) {
 			}
 		}
 	}
-	cout<<"la madonna"<<endl;
 	return sp;
 
 }

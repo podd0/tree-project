@@ -65,11 +65,11 @@ void merge_shape_inplace(shape_data &shape, const shape_data &merge)
 int main(int argc, const char *argv[])
 {
 	shape_data sh;
-	sh.positions = { {-1, 0, -1},
-					 {-1, 0, 1},
-					 {1, 0, 1},
-					 {1, 0, -1} };
-	sh.quads = {{1, 2, 3, 0}};
+	sh.positions = { {0-0.5, 0, 0},
+					 {0-0.5, 0, 1},
+					 {1-0.5, 0, 1},
+					 {1-0.5, 0, 0} };
+	sh.quads = {{3, 0, 1, 2}};
 	//sh.texcoords = {{0, 0}, {1, 0}, {1, 1}, {1, 0}};
 	save_shape("leaf.ply", sh);
 	// auto sh2 = sh;

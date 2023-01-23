@@ -19,7 +19,7 @@ namespace yocto
 	{
 		vec3f start, end;		  // extremities of the segment
 		int parent_ind;			  // index of the parent branch in branches
-		float high_base_radius;
+		double high_base_radius;
 		vector<int> children;	  // indexes of the children in branches
 		vector<vec3f> attractors; // points that decide the growth of the segment in this step
 		
