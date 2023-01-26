@@ -126,7 +126,6 @@ shape_data make_leaves(vector<branch> branches, string leaf_model, float leaf_sc
             shape_data leaf_copy = leaf;
             vec3f direction = b.direction() * leaf_scale * 2;
             auto frame = frame_fromz(b.end + direction / 2, -direction);
-            cout<<direction <<' '<<b.end<<' '<<frame.o<<endl;
             for (auto &position : leaf_copy.positions)
                 position = transform_point(frame, position * vec3f{1, 1, leaf_scale});
             merge_shape_inplace(leaves, leaf_copy);
