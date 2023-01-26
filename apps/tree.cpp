@@ -40,7 +40,6 @@ vector<branch> generate_tree(string input, float branch_length, float kill_range
 {
     shape_data sampling = load_shape(input);
     vector<vec3f> points = sampling.positions; // vector of the attractors
-    //{{0, 0, 0.6}, {10, 10, 10}, {0, 0, -1}, {0, 0.2, -1.1}, {0, 0.2, -0.9}, {0, 0.2, 0.9}, {0, 0.2, 0.1}};
     vector<int> leaves = {0}; // vector of indexes of the leave branches
     vector<branch> branches = {branch{{0, 0, 0}, {0, branch_length, 0}, -1}};
     int iteration = 1;
@@ -64,7 +63,6 @@ vector<branch> generate_tree(string input, float branch_length, float kill_range
         cout << "iteration #" << iteration << " remaining points : " << points.size() << " branches : " << branches.size() << endl;
     }
     cout << "exited at " << iteration - 1 << " iterations" << endl;
-    // shape_data sh = shape_from_branches(branches);
     return branches;
 }
 
@@ -115,13 +113,11 @@ shape_data make_sphere_mesh( vector<branch> branches, int sphere_steps) {
 
 shape_data make_leaves(vector<branch> branches, string leaf_model, float leaf_scale, string leaves_output, int cone_steps, string output) {
     shape_data leaf = load_shape(leaf_model);
-    // leaf = make_uvcylinder();
     for (auto &p : leaf.positions)
     {
         p.y *= leaf_scale;
         p.x *= leaf_scale;
     }
-    // auto leaf = quads_to_triangles(make_uvcylinder({10, 1, 1}, {leaf_scale, 1}, {1, 1, 1}));
     shape_data leaves{};
     for (branch &b : branches)
     {
@@ -129,13 +125,11 @@ shape_data make_leaves(vector<branch> branches, string leaf_model, float leaf_sc
         {
             shape_data leaf_copy = leaf;
             vec3f direction = b.direction() * leaf_scale * 2;
-            // auto frame = frame_fromz((b.start + b.end) / 2, b.start - b.end);
             auto frame = frame_fromz(b.end + direction / 2, -direction);
             cout<<direction <<' '<<b.end<<' '<<frame.o<<endl;
             for (auto &position : leaf_copy.positions)
                 position = transform_point(frame, position * vec3f{1, 1, leaf_scale});
             merge_shape_inplace(leaves, leaf_copy);
-            // break;
         }
     }
     return leaves;

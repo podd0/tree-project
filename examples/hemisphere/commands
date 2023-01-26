@@ -1,4 +1,4 @@
 pointgen --shape generic_shape --file hemisphere.ply --samples 1000
 yconverts --shape points.ply --output points.ply --scale 1.5 1.5 1.5
 yconverts --shape points.ply --output points.ply --translate 0 0.6 0
-tree --random_factor 0.3 --seed 15 --kill 0.02 --br_length 0.01 --enable_leaves --leaf foglia.ply --skeleton skele.ply --inverted_growth 3 --leaf_radius 0.002 --leaf_scale 0.0005  
+tree --random_factor 0.3 --seed 15 --kill 0.02 --br_length 0.01 --enable_leaves --leaf ../leaf.ply --skeleton skele.ply --inverted_growth 3 --leaf_radius 0.002 --leaf_scale 0.0005  

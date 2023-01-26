@@ -1,0 +1,101 @@
+{
+  "asset": {
+    "copyright": "Model by Fabio Pellacini from github.com/~xelatihy/yocto-gl",
+    "generator": "Yocto/GL - https://github.com/xelatihy/yocto-gl",
+    "version": "4.2"
+  },
+  "cameras": [
+    {
+      "name": "default",
+      "frame":[1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0.265, 0.7]
+      ,
+      
+      "aspect": 2.4000000953674316,
+      "focus": 1.2168092727661133
+    }
+  ],
+  "environments": [
+    {
+      "name": "sky",
+      "emission": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "textures": [
+  ],
+  "shapes": [
+    {
+      "name": "tree",
+      "uri": "tree.ply"
+    },
+    {
+      "name": "leaves",
+      "uri": "leaves.ply"
+    }
+  ],
+  "subdivs": [],
+  "materials": [
+    {
+      "name": "verde",
+      "type": "matte",
+      "color": [
+        0.1,
+        0.4,
+        0.1
+      ]
+    },
+    {
+      "name": "wood",
+      "type": "matte",
+      "color": [
+        0.66,
+        0.45,
+        0.34
+      ],
+      "roughness": 0.2
+    }
+  ],
+  "instances": [
+    {
+      "name": "tree",
+      "frame": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "shape": 0,
+      "material": 1
+    },
+    {
+      "name": "leaves",
+      "frame": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "shape": 1,
+      "material": 0
+    }
+  ]
+}
