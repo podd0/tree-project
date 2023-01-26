@@ -68,29 +68,6 @@ vector<branch> generate_tree(string input, float branch_length, float kill_range
     return branches;
 }
 
-void merge_shape_inplace(shape_data &shape, const shape_data &merge)
-{
-    auto offset = (int)shape.positions.size();
-    for (auto &p : merge.points)
-        shape.points.push_back(p + offset);
-    for (auto &l : merge.lines)
-        shape.lines.push_back({l.x + offset, l.y + offset});
-    for (auto &t : merge.triangles)
-        shape.triangles.push_back({t.x + offset, t.y + offset, t.z + offset});
-    for (auto &q : merge.quads)
-        shape.quads.push_back(
-            {q.x + offset, q.y + offset, q.z + offset, q.w + offset});
-    shape.positions.insert(
-        shape.positions.end(), merge.positions.begin(), merge.positions.end());
-    shape.tangents.insert(
-        shape.tangents.end(), merge.tangents.begin(), merge.tangents.end());
-    shape.texcoords.insert(
-        shape.texcoords.end(), merge.texcoords.begin(), merge.texcoords.end());
-    shape.colors.insert(
-        shape.colors.end(), merge.colors.begin(), merge.colors.end());
-    shape.radius.insert(
-        shape.radius.end(), merge.radius.begin(), merge.radius.end());
-}
 
 shape_data lines_to_trunc_cones(const vector<branch> &branches, int steps)
 {
@@ -119,6 +96,52 @@ shape_data lines_to_trunc_cones(const vector<branch> &branches, int steps)
     return shape;
 }
 
+shape_data make_sphere_mesh( vector<branch> branches, int sphere_steps) {
+    shape_data acc{};
+    shape_data csph = quads_to_triangles(make_sphere(sphere_steps, 1));
+
+    for (branch &b : branches)
+    {
+        shape_data sph = {csph.points, csph.lines, csph.triangles, csph.quads, csph.positions};
+        for (vec3f &p2 : sph.positions)
+        {
+            p2 *= b.high_base_radius;
+            p2 += b.end;
+        }
+        merge_shape_inplace(acc, sph);
+    }
+    return acc;
+}
+
+shape_data make_leaves(vector<branch> branches, string leaf_model, float leaf_scale, string leaves_output, int cone_steps, string output) {
+    shape_data leaf = load_shape(leaf_model);
+    // leaf = make_uvcylinder();
+    for (auto &p : leaf.positions)
+    {
+        p.y *= leaf_scale;
+        p.x *= leaf_scale;
+    }
+    // auto leaf = quads_to_triangles(make_uvcylinder({10, 1, 1}, {leaf_scale, 1}, {1, 1, 1}));
+    shape_data leaves{};
+    for (branch &b : branches)
+    {
+        if (b.children.empty())
+        {
+            shape_data leaf_copy = leaf;
+            vec3f direction = b.direction() * leaf_scale * 2;
+            // auto frame = frame_fromz((b.start + b.end) / 2, b.start - b.end);
+            auto frame = frame_fromz(b.end + direction / 2, -direction);
+            cout<<direction <<' '<<b.end<<' '<<frame.o<<endl;
+            for (auto &position : leaf_copy.positions)
+                position = transform_point(frame, position * vec3f{1, 1, leaf_scale});
+            merge_shape_inplace(leaves, leaf_copy);
+            // break;
+        }
+    }
+    return leaves;
+}
+
+
 void run(const vector<string> &args)
 {
     uint64_t seed = time(0);
@@ -135,7 +158,7 @@ void run(const vector<string> &args)
     double inverted_growth = 2.0f;
     int sphere_steps = 4;
     int cone_steps = 16;
-    bool make_leaves = false;
+    bool enable_leaves = false;
     float leaf_scale = 0.05;
     int iterations = 1000;
 
@@ -153,7 +176,7 @@ void run(const vector<string> &args)
     add_option(cli, "cone_steps", cone_steps, "cone subdivisions");
     add_option(cli, "leaf", leaf_model, "leaf model to put on the branches");
     add_option(cli, "leaves_output", leaves_output, "resulting model of leaves");
-    add_option(cli, "enable_leaves", make_leaves, "enable to generate the leaves");
+    add_option(cli, "enable_leaves", enable_leaves, "enable to generate the leaves");
     add_option(cli, "skeleton", skeleton, "set to generate a lines-only version of the model");
     add_option(cli, "leaf_scale", leaf_scale, "scale to apply to the leaf model");
     add_option(cli, "iterations", iterations, "maximum number of iterations while growing branches");
@@ -163,57 +186,22 @@ void run(const vector<string> &args)
 
     rng_state rng = make_rng(seed);
     vector<branch> branches = generate_tree(input, branch_length, kill_range, attraction_range, rng, random_factor, leaf_radius, inverted_growth, iterations);
+    shape_data leaves;
+    shape_data acc;
+
     calc_branch_radius(branches, branches[0], leaf_radius, inverted_growth);
+    acc = make_sphere_mesh(branches, sphere_steps);
     if (skeleton != "")
         save_shape(skeleton, shape_from_branches(branches));
-    shape_data acc{};
-    shape_data csph = quads_to_triangles(make_sphere(sphere_steps, 1));
-
-    for (branch &b : branches)
-    {
-        shape_data sph = {csph.points, csph.lines, csph.triangles, csph.quads, csph.positions};
-        for (vec3f &p2 : sph.positions)
-        {
-            p2 *= b.high_base_radius;
-            p2 += b.end;
-        }
-        merge_shape_inplace(acc, sph);
-    }
-    if (make_leaves)
-    {
-        shape_data leaf = load_shape(leaf_model);
-        for (auto &p : leaf.positions)
-        {
-            p.y *= leaf_scale;
-            p.x *= leaf_scale;
-        }
-        // auto leaf = quads_to_triangles(make_uvcylinder({10, 1, 1}, {leaf_scale, 1}, {1, 1, 1}));
-        shape_data leaves{};
-        for (branch &b : branches)
-        {
-            if (b.children.empty())
-            {
-                shape_data leaf_copy = leaf;
-                vec3f direction = b.direction() * leaf_scale * 2;
-                // auto frame = frame_fromz((b.start + b.end) / 2, b.start - b.end);
-                auto frame = frame_fromz(b.end + direction / 2, -direction);
-                for (auto &position : leaf_copy.positions)
-                    position = transform_point(frame, position * vec3f{1, 1, leaf_scale});
-                merge_shape_inplace(leaves, leaf_copy);
-                // break;
-            }
-        }
+    if (enable_leaves) {
+        leaves = make_leaves(branches, leaf_model, leaf_scale, leaves_output, cone_steps, output);
         save_shape(leaves_output, leaves);
     }
     merge_shape_inplace(acc, lines_to_trunc_cones(branches, cone_steps));
     acc.normals = compute_normals(acc);
     save_shape(output, acc);
-
-    // merge_shape_inplace(acc, quads_to_triangles(leaves));
-    // acc.points = {}; acc.lines = {}; acc.quads = {};
-    // acc.normals = compute_normals(acc);
-    // save_shape("merging.ply", acc);
 }
+
 int main(int argc, const char *argv[])
 {
     try

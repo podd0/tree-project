@@ -1,0 +1,4 @@
+pointgen --samples 100000 --shape generic_shape --file dragon.ply
+yconverts --shape points.ply --output points.ply  --scale 0.05 0.05 0.05
+yconverts --shape points.ply --output points.ply  --translate 0 3 0
+tree --random_factor 0.1 --seed 15 --kill 0.1 --br_length 0.05   --leaf foglia.ply --skeleton skele.ply --inverted_growth 3 --leaf_radius 0.005 --leaf_scale 0.0005  --enable_leaves

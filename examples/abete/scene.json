@@ -7,20 +7,9 @@
   "cameras": [
     {
       "name": "default",
-      "frame": [
-        0.8151804208755493,
-        -0.0,
-        0.579207181930542,
-        0.16660168766975403,
-        0.9577393531799316,
-        -0.23447643220424652,
-        -0.5547295212745667,
-        0.28763750195503235,
-        0.7807304263114929,
-        -0.75,
-        0.4000000059604645,
-        0.8999999761581421
-      ],
+      "frame":[1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 2, 1]
+      ,
+      
       "aspect": 2.4000000953674316,
       "focus": 1.2168092727661133
     }
@@ -36,10 +25,6 @@
     }
   ],
   "textures": [
-    {
-      "name": "maria",
-      "uri": "maria.png"
-    }
   ],
   "shapes": [
     {
@@ -54,11 +39,6 @@
   "subdivs": [],
   "materials": [
     {
-      "name": "maria",
-      "type": "matte",
-      "color_tex": 0
-    },
-    {
       "name": "verde",
       "type": "matte",
       "color": [
@@ -68,33 +48,8 @@
       ]
     },
     {
-      "name": "redglass",
-      "type": "refractive",
-      "color": [
-        1.0,
-        0.5,
-        0.5
-      ],
-      "roughness": 0
-    },
-    {
-      "name": "jade",
-      "type": "refractive",
-      "color": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "roughness": 0,
-      "scattering": [
-        0.3,
-        0.6,
-        0.3
-      ]
-    },
-    {
-      "name": "roughmetal",
-      "type": "reflective",
+      "name": "wood",
+      "type": "matte",
       "color": [
         0.66,
         0.45,
@@ -121,10 +76,10 @@
         0
       ],
       "shape": 0,
-      "material": 4
+      "material": 1
     },
     {
-      "name": "l",
+      "name": "leaves",
       "frame": [
         1,
         0,
@@ -140,7 +95,7 @@
         0
       ],
       "shape": 1,
-      "material": 1
+      "material": 0
     }
   ]
 }

@@ -32,6 +32,8 @@ namespace yocto
 	*/
 	void kill_points(vector<vec3f> &points, vector<branch> &branches, float kill_range);
 
+	void merge_shape_inplace(shape_data &shape, const shape_data &merge);
+
 	vec3f random_growth_vector(rng_state rng, float random_factor);
 
 	/* Grows the leaves forward (in their current direction),
